@@ -1,0 +1,76 @@
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: #0d1117;
+    color: #c9d1d9;
+    font-family: monospace;
+}
+
+.chat-container {
+    width: min(900px, 95%);
+    height: 92vh;
+    margin: 4vh auto;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid #30363d;
+    background: #161b22;
+}
+
+header {
+    padding: 16px 20px;
+    border-bottom: 1px solid #30363d;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+header h1 { margin: 0; color: #7ee787; font-size: 1.2rem; }
+header p { margin: 4px 0 0; color: #8b949e; font-size: 0.8rem; }
+.quick { display: flex; gap: 6px; }
+.quick button { padding: 6px 12px; background: transparent; color: #7ee787; }
+.quick button:hover { background: #21262d; }
+
+.chat { flex: 1; overflow-y: auto; padding: 20px; }
+
+.message {
+    margin-bottom: 16px;
+    padding: 12px 15px;
+    border: 1px solid #30363d;
+}
+.message strong { display: block; margin-bottom: 6px; color: #7ee787; }
+.message p { margin: 0; white-space: pre-wrap; word-break: break-word; }
+.message.user { border-left: 3px solid #58a6ff; }
+.message.user strong { color: #58a6ff; }
+.message.bot { border-left: 3px solid #7ee787; }
+.message.pending p { color: #8b949e; animation: blink 1s infinite; }
+@keyframes blink { 50% { opacity: 0.3; } }
+
+.teach { padding: 0 15px; border-top: 1px solid #30363d; }
+.teach summary { padding: 10px 0; cursor: pointer; color: #8b949e; }
+.teach form { border: 0; padding: 0 0 12px; }
+
+form { display: flex; padding: 15px; gap: 10px; border-top: 1px solid #30363d; }
+
+input {
+    flex: 1;
+    min-width: 0;
+    padding: 12px;
+    border: 1px solid #30363d;
+    background: #0d1117;
+    color: #c9d1d9;
+    font-family: monospace;
+    outline: none;
+}
+input:focus { border-color: #7ee787; }
+
+button {
+    padding: 12px 20px;
+    border: 1px solid #7ee787;
+    background: #238636;
+    color: white;
+    font-family: monospace;
+    cursor: pointer;
+}
+button:hover { background: #2ea043; }

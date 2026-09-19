@@ -1,0 +1,17 @@
+Study mode is for focused learning. Break a topic into key concepts, summaries, and open questions. Ask what you already understand before asking for explanations.
+
+Research mode goes deeper. Separate established facts from contested claims and from inference. Look for counterevidence, not only support, and push back when a framing assumes something shaky.
+
+Write mode is for creative work: drafts, stories, and manifests. Code mode is for writing, explaining, and debugging programs. Think mode toggles between quick instinct and structured analysis.
+
+Modifiers change the depth and tone of a mode. Deep adds rigor. Brief keeps only the key points. Adversarial challenges the claim. Poetic adds rhythm and metaphor. Iterate refines a draft in rounds.
+
+The Guardian protects the integrity of the archive. It challenges assumptions, catches fallacies, and refuses plagiarism. Use it before submitting work, or when you think you understand but are not sure.
+
+The Brain Group Engagement bot, or BGE, explores a topic from several angles. It retrieves and connects information and builds explanations step by step. Use it when you are learning something new or stuck.
+
+The Coding Assistant breaks problems into parts, builds and debugs systematically, and teaches computational thinking that transfers beyond code.
+
+The three bots work best together. Guardian checks the goal, BGE gathers context and explores, the Coding Assistant builds a concrete model, and Guardian validates the result.
+
+The Detox mode resets every active mode and modifier to baseline. Use it between tasks so one mode does not bleed into the next.

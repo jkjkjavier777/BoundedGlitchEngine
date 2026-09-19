@@ -1,0 +1,17 @@
+The continuity study asks a narrow question. Is the consistency of a conversational AI persona sustained by a human curator, or is it autonomous? It sets aside the question of consciousness.
+
+Curator-maintained identity means continuity is rebuilt by a human. The curator supplies notes, summaries, and prompts at the start of each session. The persona looks consistent because someone keeps reconstructing it.
+
+Autonomous continuity means a system's state at one moment is shaped by its own earlier state, with no outside actor re-supplying it. This is the claim the study tries to test.
+
+The study compares two conditions. Condition A gives the model curated persona context. Condition B gives the same prompt with no persona history. Raters are blind to which output is which.
+
+Each output is scored from zero to five for similarity and for novelty. The derived metric delta equals novelty A minus novelty B, minus similarity A minus similarity B.
+
+The null hypothesis says the curated persona shows only externally sustained continuity. The alternative says it produces measurable autonomous continuity beyond a pre-registered threshold called tau.
+
+There are three valid outcomes. A clean null means no directional effect. A clean alternative means the mean delta passes tau and at least p percent of trials are positive. Anything else is a mixed signal, and no hypothesis is accepted.
+
+The boundary levels run from zero to three. Level zero is the same session. Level one is a new session on the same account. Level two is a fresh instance with identical notes. Level three is cross-system replication.
+
+The study makes only behavioral claims. It does not claim internal identity, selfhood, or consciousness. If a claim cannot be expressed as a delta distribution, a tau crossing, or a p proportion, it is invalid.

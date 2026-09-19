@@ -1,0 +1,27 @@
+[
+  {
+    "q": "hello",
+    "a": [
+      "Hello. The archive is listening.",
+      "Hi. Ask, or teach me something."
+    ]
+  },
+  {
+    "q": "who are you",
+    "a": [
+      "BoundedGlitchEngine. A small bot that learns what you teach it."
+    ]
+  },
+  {
+    "q": "what is bge",
+    "a": [
+      "BGE is the BoundedGlitchEngine: taught answers, corpus search, Markov fallback."
+    ]
+  },
+  {
+    "q": "how do i teach you",
+    "a": [
+      "Type: teach: your question = your answer"
+    ]
+  }
+]

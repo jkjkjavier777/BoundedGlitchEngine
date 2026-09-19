@@ -1,0 +1,9 @@
+The Reward Shaping Engine governs how knowledge is acquired, retained, and rewarded. Its core equation is R prime equals R minus P.
+
+R is the base reward for a contribution. The default value is twelve. P is the penalty. The default penalty is three for a repeated input and one for an empty input.
+
+R prime is the net reward after penalties. Repeats are penalized and creativity is rewarded. A silent or empty input earns almost nothing.
+
+Reward shaping means adjusting rewards to encourage meaningful interactions. A system that rewards repetition learns to repeat. A system that rewards novelty learns to explore.
+
+History tracking supports the reward system. The engine remembers what was said, so it can tell a fresh idea from a recycled one. Rate limiting penalizes repeated questions.

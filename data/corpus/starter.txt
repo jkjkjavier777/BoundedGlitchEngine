@@ -1,0 +1,7 @@
+Knowledge is not a destination. It is a living ecosystem. Every question is a seed. Every answer is a branch. Every mistake is a root.
+
+The Reward Shaping Engine governs how knowledge is retained. The net reward equals the base reward minus the penalty. Repeats are penalized and creativity is rewarded.
+
+Continuity can be curator-maintained or autonomous. Curator-maintained continuity is rebuilt by a human through notes and prompts. Autonomous continuity would require a system to be shaped by its own prior state without outside help.
+
+Chaos is not the enemy. It is the fuel that drives the archive forward. The archive is yours to explore, expand, and shape.

@@ -1,0 +1,15 @@
+BoundedGlitchEngine, or BGE, is a small trainable chatbot. It needs no machine learning libraries. It runs on Flask and plain Python, so it works on a phone in Termux.
+
+BGE answers in three layers. First it checks taught answers. Then it searches the corpus. If both fail, it falls back to a Markov chain, or admits it does not know.
+
+Taught answers win over everything. You teach the bot with the command teach, followed by a question, an equals sign, and an answer. Taught answers are saved to knowledge.json and survive restarts.
+
+Corpus search uses TF-IDF similarity. Every passage in the corpus folder is indexed. Rare words carry more weight than common words. The passage closest to your question is returned.
+
+The Markov fallback is a word chain trained on the corpus and on taught answers. It babbles from words related to your question. It is rough, and it improves with more text.
+
+To train the bot, place text files in the data corpus folder and type train. Training reloads every file and rebuilds the index and the chain. No restart is needed.
+
+The forget command removes a taught question. The stats command shows how many questions, passages, words, and Markov states the bot holds. The help command lists the commands.
+
+More text means better answers. Write clear passages, separate them with blank lines, and keep each one focused on a single idea.

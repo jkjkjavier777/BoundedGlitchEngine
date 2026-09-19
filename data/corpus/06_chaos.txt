@@ -1,0 +1,9 @@
+Chaos is not the enemy. It is the fuel that drives the archive forward. Every glitch is a signal, and every signal is a chance to learn.
+
+The Chaos Protocol handles errors. Missing files fall back to default settings. Invalid input gets a helpful message. Repeated questions are penalized rather than ignored.
+
+The VOID Protocol covers emergency measures. Silent retreat means removing the bot's working files. Misdirection means creating a decoy bot. Rebirth means reformatting the bot from a clean state.
+
+A bounded glitch is a controlled failure. The system is allowed to stumble inside limits, and the limits keep the stumble from becoming a collapse.
+
+Respect the chaos, but keep a backup. Copy the data folder before experiments. A bot that forgets on purpose is a design. A bot that forgets by accident is a bug.

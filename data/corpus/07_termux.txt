@@ -1,0 +1,9 @@
+Termux runs a Linux terminal on Android. Install Python with pkg install python, then install Flask with pip install flask. That is all BoundedGlitchEngine needs.
+
+Start the bot with python app.py from the BoundedGlitchEngine folder. Open localhost on port 5000 in your phone browser to chat with it.
+
+Run termux-setup-storage once to grant access to your phone files. Then copy notes from the downloads folder into data corpus, and type train in the chat.
+
+The bot stores taught answers in data knowledge.json. Back that file up regularly. It is the memory of everything you have taught.
+
+To stop the server, press control and c in Termux. To run it in the background, use nohup python app.py followed by an ampersand.
