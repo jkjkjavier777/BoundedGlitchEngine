@@ -1,0 +1,23 @@
+{
+  "vocab_size": 256,
+  "model": {
+    "vocab_size": 256
+  },
+  "conversation": {
+    "save_dir": "data/conversations"
+  },
+  "personas": {
+    "bosk": {
+      "name": "The-Book-of-Secret-Knowledge",
+      "description": "Secret knowledge persona",
+      "max_tokens": 200,
+      "temperature": 0.8
+    },
+    "bge": {
+      "name": "BoundedGlitchEngine",
+      "description": "Bounded glitch engine persona",
+      "max_tokens": 200,
+      "temperature": 0.8
+    }
+  }
+}
