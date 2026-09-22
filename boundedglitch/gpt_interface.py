@@ -1,45 +1,117 @@
-"""GPT Interface."""
+"""GPT Interface: runs a trained BoundedGlitchGPT checkpoint with numpy only."""
 import numpy as np
-from typing import Optional
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_CHECKPOINT = "data/model/weights.npz"
+
 
 class SimpleTokenizer:
-    """Simple tokenizer."""
-    def __init__(self, vocab_size: int = 256):
-        self.vocab_size = vocab_size
-    
-    def encode(self, text: str) -> np.ndarray:
-        return np.array([ord(c) % self.vocab_size for c in text], dtype=np.int32)
-    
-    def decode(self, token_ids: np.ndarray) -> str:
-        return ''.join([chr(int(tid)) if tid < 128 else '?' for tid in token_ids])
+    """Character tokenizer rebuilt from the vocab saved at export time."""
+
+    def __init__(self, itos):
+        self.itos = list(itos)
+        self.stoi = {t: i for i, t in enumerate(self.itos)}
+        self.unk = self.stoi.get("<UNK>", 0)
+        self.special = [i for i, t in enumerate(self.itos)
+                        if len(t) > 1 and t.startswith("<") and t.endswith(">")]
+
+    def encode(self, text):
+        return [self.stoi.get(c, self.unk) for c in text]
+
+    def decode(self, ids):
+        return "".join(self.itos[i] for i in ids)
+
+
+def _layer_norm(x, w, b, eps=1e-5):
+    mu = x.mean(-1, keepdims=True)
+    var = x.var(-1, keepdims=True)
+    return (x - mu) / np.sqrt(var + eps) * w + b
+
+
+def _softmax(x):
+    x = x - x.max(-1, keepdims=True)
+    e = np.exp(x)
+    return e / e.sum(-1, keepdims=True)
+
 
 class GPTModel:
-    """GPT model."""
-    def __init__(self, config: dict):
-        self.config = config
-        self.vocab_size = config.get("vocab_size", 256)
-    
-    def generate(self, token_ids: np.ndarray, max_tokens: int = 100, 
-                temperature: float = 0.8) -> np.ndarray:
-        tokens = list(token_ids)
+    """Numpy forward pass matching model/model.py (pre-norm GPT, no dropout)."""
+
+    def __init__(self, path):
+        data = np.load(path)
+        self.itos = [str(t) for t in data["itos"]]
+        self.num_heads = int(data["cfg_num_heads"])
+        self.num_layers = int(data["cfg_num_layers"])
+        self.max_ctx = int(data["cfg_max_context"])
+        self.w = {k: data[k].astype(np.float32) for k in data.files
+                  if k != "itos" and not k.startswith("cfg_")}
+        self.pe = self.w.pop("positional_embedding.pe")[0]
+        self.num_params = sum(v.size for v in self.w.values())
+
+    def _logits(self, ids):
+        W, H = self.w, self.num_heads
+        T = len(ids)
+        x = W["token_embedding.weight"][ids] + self.pe[:T]
+        mask = np.tril(np.ones((T, T), dtype=bool))
+        for i in range(self.num_layers):
+            p = f"transformer_blocks.{i}."
+            h = _layer_norm(x, W[p + "norm1.weight"], W[p + "norm1.bias"])
+            q, k, v = (
+                (h @ W[p + f"attention.{n}_proj.weight"].T
+                 + W[p + f"attention.{n}_proj.bias"])
+                .reshape(T, H, -1).transpose(1, 0, 2)
+                for n in ("query", "key", "value")
+            )
+            s = (q @ k.transpose(0, 2, 1)) / np.sqrt(q.shape[-1])
+            a = _softmax(np.where(mask, s, -np.inf))
+            ctx = (a @ v).transpose(1, 0, 2).reshape(T, -1)
+            x = x + ctx @ W[p + "attention.output_proj.weight"].T \
+                + W[p + "attention.output_proj.bias"]
+            h = _layer_norm(x, W[p + "norm2.weight"], W[p + "norm2.bias"])
+            h = np.maximum(h @ W[p + "ffn.fc1.weight"].T + W[p + "ffn.fc1.bias"], 0)
+            x = x + h @ W[p + "ffn.fc2.weight"].T + W[p + "ffn.fc2.bias"]
+        x = _layer_norm(x[-1], W["final_norm.weight"], W["final_norm.bias"])
+        return x @ W["output_head.weight"].T + W["output_head.bias"]
+
+    def generate(self, ids, max_tokens=100, temperature=0.8, banned=()):
+        ids, new = list(ids), []
         for _ in range(max_tokens):
-            tokens.append(np.random.randint(0, self.vocab_size))
-        return np.array(tokens, dtype=np.int32)
+            logits = self._logits(np.array(ids[-self.max_ctx:]))
+            if len(banned):
+                logits[list(banned)] = -np.inf
+            if temperature <= 0:
+                nxt = int(logits.argmax())
+            else:
+                p = _softmax(logits / temperature).astype(np.float64)
+                nxt = int(np.random.choice(len(p), p=p / p.sum()))
+            ids.append(nxt)
+            new.append(nxt)
+        return new
+
 
 class GPTInterface:
-    """Interface to GPT."""
-    def __init__(self, config: dict):
-        self.config = config
-        self.model_config = config["model"]
-        self.tokenizer = SimpleTokenizer(self.model_config.get("vocab_size", 256))
-        self.model = GPTModel(self.model_config)
-        print("[✓] GPTInterface initialized")
+    """Loads weights.npz exported from The-BoundedGlitchGPT and generates text."""
 
-    def generate(self, prompt: str, persona: str = "bosk", 
-                max_tokens: int = 150, temperature: Optional[float] = None) -> str:
-        """Generate text."""
-        if temperature is None:
-            temperature = self.config["personas"].get(persona, {}).get("temperature", 0.8)
-        prompt_ids = self.tokenizer.encode(prompt)
-        generated_ids = self.model.generate(prompt_ids, max_tokens=max_tokens, temperature=temperature)
-        return self.tokenizer.decode(generated_ids)[-50:].strip()
+    def __init__(self, config):
+        self.config = config
+        self.model_config = config.get("model", {})
+        path = Path(self.model_config.get("checkpoint", DEFAULT_CHECKPOINT))
+        if not path.is_absolute():
+            path = ROOT / path
+        self.model = self.tokenizer = None
+        if path.exists():
+            self.model = GPTModel(path)
+            self.tokenizer = SimpleTokenizer(self.model.itos)
+            print(f"[✓] GPTInterface loaded {path.name} ({self.model.num_params:,} params)")
+        else:
+            print(f"[!] No weights at {path}. Train + export first; replies will be placeholders.")
+
+    def generate(self, prompt, persona="bosk", max_tokens=100, **kwargs):
+        if self.model is None:
+            return "[no trained model loaded]"
+        temperature = self.config["personas"].get(persona, {}).get("temperature", 0.8)
+        ids = self.tokenizer.encode(prompt) or self.tokenizer.encode("\n")
+        new = self.model.generate(ids, max_tokens=max_tokens, temperature=temperature,
+                                  banned=self.tokenizer.special)
+        return self.tokenizer.decode(new).strip()

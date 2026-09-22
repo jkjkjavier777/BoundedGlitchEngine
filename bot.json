@@ -10,13 +10,13 @@
     "bosk": {
       "name": "The-Book-of-Secret-Knowledge",
       "description": "Secret knowledge persona",
-      "max_tokens": 200,
+      "max_tokens": 40,
       "temperature": 0.8
     },
     "bge": {
       "name": "BoundedGlitchEngine",
       "description": "Bounded glitch engine persona",
-      "max_tokens": 200,
+      "max_tokens": 40,
       "temperature": 0.8
     }
   }
