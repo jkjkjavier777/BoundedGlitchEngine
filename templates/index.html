@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>BoundedGlitchEngine</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <h1>BoundedGlitchEngine</h1>
+  <div id="chat"></div>
+  <input type="text" id="prompt" placeholder="Type a message or teach: phrase = answer">
+  <button onclick="sendMessage()">Send</button>
+
+  <script>
+    async function sendMessage() {
+      const input = document.getElementById('prompt');
+      const message = input.value.trim();
+      if (!message) return;
+
+      const chat = document.getElementById('chat');
+      chat.innerHTML += `<div class="user"><b>You:</b> ${message}</div>`;
+      input.value = '';
+
+      const res = await fetch('/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+      });
+      const data = await res.json();
+      chat.innerHTML += `<div class="bot"><b>Bot:</b> ${data.response || data.error}</div>`;
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    document.getElementById('prompt').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+  </script>
+</body>
+</html>

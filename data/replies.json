@@ -1,0 +1,4 @@
+{
+  "hello": ["Hey there!", "Hello!", "Hi, how can I help?"],
+  "default": ["I don't understand. Teach me with: teach: your phrase = your answer"]
+}

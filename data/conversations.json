@@ -1,0 +1,12 @@
+[
+  {
+    "role": "user",
+    "content": "hello",
+    "timestamp": 1790376695.4632287
+  },
+  {
+    "role": "bot",
+    "content": "Hi, how can I help?",
+    "timestamp": 1790376695.465828
+  }
+]
