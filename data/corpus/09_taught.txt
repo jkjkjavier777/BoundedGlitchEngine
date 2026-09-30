@@ -1,0 +1,8 @@
+You: hello
+Bot: Hey there!
+
+You: hello
+Bot: Hello!
+
+You: hello
+Bot: Hi, how can I help?

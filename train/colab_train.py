@@ -220,7 +220,7 @@ def main():
 
     model.eval()
     print("\n--- sample ---")
-    print(tok.decode(model.generate(tok.encode("hello"), 150, 0.8)))
+    print(tok.decode(model.generate(tok.encode("You: hello\nBot:"), 150, 0.8)))
 
     sd = {k: v.detach().cpu().numpy() for k, v in model.state_dict().items()}
     sd["itos"] = np.array([tok.itos[i] for i in range(VOCAB_SIZE)])
