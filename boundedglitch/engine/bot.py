@@ -1,49 +1,78 @@
-"""
-BoundedGlitchEngine Bot: Conversation management and orchestration.
-"""
+"""BoundedGlitchEngine: taught answers first, GPT fallback, every reply tagged."""
+import sys
+import time
+from pathlib import Path
 
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from core.brain import load_replies, find_best_match, _pick_non_repeating, teach
+from core.telemetry import log_event
 from .gpt_interface import GPTInterface
 
 
 class BoundedGlitchEngine:
-    """Main conversation engine."""
-
-    def __init__(self, checkpoint_path: str, tokenizer_path: str, device: str = 'cpu'):
-        self.gpt = GPTInterface(checkpoint_path, tokenizer_path, device=device)
+    def __init__(self, weights_path=None):
+        self.gpt = None
+        try:
+            self.gpt = GPTInterface(weights_path) if weights_path else GPTInterface()
+        except Exception as e:
+            print(f"[!] GPT unavailable, using taught replies only: {e}")
         self.conversation_history = []
+        self.last_meta = {}
 
-    def chat(self, user_input: str, max_tokens: int = 100, temperature: float = 0.8) -> str:
+    def chat(self, user_input, max_tokens=100, temperature=0.8):
+        user_input = user_input.strip()
         self.conversation_history.append(("user", user_input))
-        response = self.gpt.generate(user_input, max_tokens=max_tokens, temperature=temperature)
-        self.conversation_history.append(("bot", response))
-        return response
+        t0 = time.time()
+        source, matched_key = None, None
+
+        if user_input.lower().startswith("teach:"):
+            parts = user_input[6:].split("=", 1)
+            reply = teach(*parts) if len(parts) == 2 else "Format: teach: your phrase = your answer"
+            source = "teach"
+        else:
+            replies = load_replies()
+            match = find_best_match(user_input, replies)
+            if match and match != "default":
+                reply = _pick_non_repeating(match, replies[match])
+                source, matched_key = "taught", match
+            elif self.gpt:
+                reply = self.gpt.generate(user_input, max_tokens, temperature)
+                source = "gpt"
+            elif replies.get("default"):
+                reply = _pick_non_repeating("default", replies["default"])
+                source = "default"
+            else:
+                reply = "I don't understand. Teach me with: teach: your phrase = your answer"
+                source = "default"
+
+        latency_ms = round((time.time() - t0) * 1000)
+        self.last_meta = {"source": source, "matched_key": matched_key}
+        log_event({
+            "prompt": user_input,
+            "reply": reply,
+            "source": source,
+            "matched_key": matched_key,
+            "latency_ms": latency_ms,
+            "reply_chars": len(reply),
+            "temperature": temperature if source == "gpt" else None,
+        })
+        self.conversation_history.append(("bot", reply))
+        return reply
 
     def interactive_mode(self):
-        print("\n" + "=" * 70)
-        print("BoundedGlitchEngine - Interactive Mode")
-        print("=" * 70)
-        print("Type 'quit' to exit.\n")
-
+        print("BoundedGlitchEngine. 'quit' to exit.\n")
         while True:
             try:
-                user_input = input("You: ").strip()
-                if not user_input:
-                    continue
-                if user_input.lower() in ['quit', 'exit']:
-                    print("\n[*] Goodbye!")
-                    break
-                print("\nBot: ", end="", flush=True)
-                response = self.chat(user_input, max_tokens=150, temperature=0.8)
-                print(response)
-                print()
-            except KeyboardInterrupt:
-                print("\n\n[*] Interrupted.")
+                text = input("You: ").strip()
+            except (EOFError, KeyboardInterrupt):
+                print("\n[*] Goodbye!")
                 break
-            except Exception as e:
-                print(f"\n[Error] {str(e)}\n")
-
-    def get_history(self):
-        return self.conversation_history
-
-    def clear_history(self):
-        self.conversation_history = []
+            if not text:
+                continue
+            if text.lower() in ("quit", "exit"):
+                break
+            reply = self.chat(text)
+            print(f"\nBot [{self.last_meta['source']}]: {reply}\n")

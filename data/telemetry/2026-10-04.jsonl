@@ -1,0 +1,3 @@
+{"ts": "2026-10-04T04:48:54.871475+00:00", "prompt": "hello", "reply": "Hello!", "source": "taught", "matched_key": "hello", "latency_ms": 1, "reply_chars": 6, "temperature": null}
+{"ts": "2026-10-04T04:49:05.761163+00:00", "prompt": "what are you?", "reply": "drafts, stories, and manifests. Code mode is for writing, explaining, and debugging programs. Think", "source": "gpt", "matched_key": null, "latency_ms": 6409, "reply_chars": 99, "temperature": 0.8}
+{"ts": "2026-10-04T04:49:33.527092+00:00", "prompt": "what is BoundedGlitchEngine?", "reply": "drafts, stories, and manifests. Code mode is for writing, explaining, and debugging programs. Think", "source": "gpt", "matched_key": null, "latency_ms": 8041, "reply_chars": 99, "temperature": 0.8}

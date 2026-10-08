@@ -1,0 +1,26 @@
+"""GPTInterface: boundary between the engine and the NumPy model."""
+from pathlib import Path
+from .numpy_gpt import NumpyGPT
+
+DEFAULT_WEIGHTS = Path(__file__).resolve().parents[2] / "data" / "model" / "weights.npz"
+DIALOGUE = True  # set False if you go back to weights_prose.npz
+
+
+class GPTInterface:
+    def __init__(self, weights_path=DEFAULT_WEIGHTS):
+        self.weights_path = str(weights_path)
+        self.model = NumpyGPT(self.weights_path)
+
+    def generate(self, prompt, max_tokens=100, temperature=0.8):
+        if DIALOGUE:
+            prompt = " ".join(prompt.split())
+            text = self.model.generate(f"You: {prompt}\nBot:", max_tokens, temperature, stop="\n")
+            return text.strip() or "..."
+        text = self.model.generate(prompt, max_tokens, temperature).strip()
+        cut = max(text.rfind("."), text.rfind("!"), text.rfind("?"))
+        return text[: cut + 1] if cut > 20 else text
+
+    def get_info(self):
+        m = self.model
+        return {"weights": self.weights_path, "vocab": m.vocab,
+                "layers": m.layers, "heads": m.heads, "context": m.ctx}
