@@ -34,7 +34,11 @@ class GPTInterface:
 
     def generate(self, prompt, max_tokens=100, temperature=0.8):
         if self.backend == "glitchgpt":
-            return self._generate_glitch(prompt, max_tokens, temperature)
+            for _ in range(4):
+                r = self._generate_glitch(prompt, max_tokens, temperature)
+                if len(r) >= 12 and not r.endswith(":"):
+                    return r
+            return "I don't understand. Teach me with: teach: your phrase = your answer"
         return self._generate_legacy(prompt, max_tokens, temperature)
 
     # ---- new model ---------------------------------------------------------
