@@ -1,0 +1,3 @@
+{"ts": "2026-10-09T06:15:51.992885+00:00", "prompt": "Hello", "reply": "Hi, how can I help?", "source": "taught", "matched_key": "hello", "latency_ms": 1, "reply_chars": 19, "temperature": null}
+{"ts": "2026-10-09T06:16:01.396270+00:00", "prompt": "Tell me about the red zone", "reply": "Good you tight anoth it one layers and too training without answers and oversation.", "source": "gpt", "matched_key": null, "latency_ms": 1676, "reply_chars": 83, "temperature": 0.8}
+{"ts": "2026-10-09T06:16:27.392461+00:00", "prompt": "What can you do?", "reply": "On a unsupportaion eversation be cuross ach the chanishes are withing.", "source": "gpt", "matched_key": null, "latency_ms": 1272, "reply_chars": 70, "temperature": 0.8}

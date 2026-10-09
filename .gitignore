@@ -3,3 +3,4 @@ __pycache__/
 data/*.tmp
 __pycache__/
 data/conversations/
+data/model/glitchgpt_old.npz
