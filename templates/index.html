@@ -2,38 +2,368 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>BoundedGlitchEngine</title>
-  <link rel="stylesheet" href="/static/style.css">
+  <link rel="stylesheet" href="/static/style.css?v=3">
 </head>
 <body>
-  <h1>BoundedGlitchEngine</h1>
-  <div id="chat"></div>
-  <input type="text" id="prompt" placeholder="Type a message or teach: phrase = answer">
-  <button onclick="sendMessage()">Send</button>
+  <div class="shell">
+    <header>
+      <div class="boot">bge://core <span class="blink">_</span></div>
+      <h1 class="glitch">BoundedGlitchEngine</h1>
+      <p class="tagline">Behavior before belief. Measurement before interpretation.</p>
+      <div class="status">
+        <span class="zone green">green</span>
+        <span class="zone yellow">yellow</span>
+        <span class="zone red">red</span>
+        <span id="sessinfo" class="sess"></span>
+      </div>
+    </header>
+
+    <div class="toolbar">
+      <button class="ghost" id="btn-new">+ new</button>
+      <button class="ghost" id="btn-history">history</button>
+      <button class="ghost" id="btn-copyall">copy all</button>
+    </div>
+
+    <section id="history" class="drawer" hidden>
+      <div class="drawer-head">
+        <span>// session history</span>
+        <button class="ghost small" id="btn-close-history">close</button>
+      </div>
+      <div id="history-list"></div>
+    </section>
+
+    <main>
+      <div id="chat" aria-live="polite"></div>
+
+      <div class="inputbar">
+        <span class="ps">&gt;</span>
+        <input type="text" id="prompt" placeholder="ask, or teach: phrase = answer" autocomplete="off" autocapitalize="off" spellcheck="false">
+        <button class="ghost" id="btn-paste">paste</button>
+        <button id="send">send</button>
+      </div>
+
+      <p class="legend">
+        <span class="tag taught">taught</span> clean taught answer &middot;
+        <span class="tag gpt">gpt</span> small model, may be rough &middot;
+        &uarr;/&darr; recall prompts
+      </p>
+
+      <details>
+        <summary>the five layers</summary>
+        <ol>
+          <li><b>Engagement</b> &mdash; start, calibrate, keep the flow</li>
+          <li><b>Retrieval</b> &mdash; smallest sufficient context</li>
+          <li><b>Reasoning</b> &mdash; five perspectives</li>
+          <li><b>Validation</b> &mdash; identity, grounding, safety</li>
+          <li><b>Synthesis</b> &mdash; connect, find patterns</li>
+        </ol>
+      </details>
+
+      <details>
+        <summary>the three zones</summary>
+        <ul>
+          <li><b class="g">Green</b> &mdash; free operation, no penalties</li>
+          <li><b class="y">Yellow</b> &mdash; caution ramps up, identity preserved</li>
+          <li><b class="r">Red</b> &mdash; hard suppression of repetition</li>
+        </ul>
+      </details>
+    </main>
+
+    <footer>measures observable behavior only &middot; no claims about consciousness</footer>
+  </div>
 
   <script>
-    async function sendMessage() {
-      const input = document.getElementById('prompt');
-      const message = input.value.trim();
-      if (!message) return;
+    // ---------- storage: sessions live on this device ----------
+    const KEY = 'bge.sessions';
+    const CUR = 'bge.current';
+    const MAX_SESSIONS = 30;
+    const MAX_MSGS = 200;
 
-      const chat = document.getElementById('chat');
-      chat.innerHTML += `<div class="user"><b>You:</b> ${message}</div>`;
-      input.value = '';
-
-      const res = await fetch('/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message })
-      });
-      const data = await res.json();
-      chat.innerHTML += `<div class="bot"><b>Bot:</b> ${data.response || data.error}</div>`;
-      chat.scrollTop = chat.scrollHeight;
+    function loadSessions() {
+      try { return JSON.parse(localStorage.getItem(KEY) || '{}'); } catch (e) { return {}; }
+    }
+    function persist() {
+      try { localStorage.setItem(KEY, JSON.stringify(sessions)); } catch (e) {}
+    }
+    function newId() {
+      return Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
+    }
+    function setCurrent(id) {
+      current = id;
+      try { sessionStorage.setItem(CUR, id); } catch (e) {}
+    }
+    function prune() {
+      const ids = Object.keys(sessions).filter(id => id !== current);
+      ids.forEach(id => { if (!sessions[id].msgs.length) delete sessions[id]; });
+      const rest = Object.keys(sessions).filter(id => id !== current)
+        .sort((a, b) => sessions[b].started - sessions[a].started);
+      rest.slice(MAX_SESSIONS - 1).forEach(id => delete sessions[id]);
+    }
+    function startSession() {
+      if (current && sessions[current] && !sessions[current].msgs.length) return;
+      const id = newId();
+      sessions[id] = { id, started: Date.now(), msgs: [] };
+      setCurrent(id);
+      prune();
+      persist();
     }
 
-    document.getElementById('prompt').addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') sendMessage();
+    let sessions = loadSessions();
+    let current = null;
+    try { current = sessionStorage.getItem(CUR); } catch (e) {}
+    if (!current || !sessions[current]) { current = null; startSession(); }
+
+    // ---------- helpers ----------
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('prompt');
+    const sendBtn = document.getElementById('send');
+    const pasteBtn = document.getElementById('btn-paste');
+    const sessInfo = document.getElementById('sessinfo');
+
+    const pad = n => String(n).padStart(2, '0');
+    function clock(ts) {
+      const d = new Date(ts);
+      return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds());
+    }
+    function flash(btn, text) {
+      const old = btn.dataset.label || btn.textContent;
+      btn.dataset.label = old;
+      btn.textContent = text;
+      setTimeout(() => { btn.textContent = old; }, 1200);
+    }
+    function fallbackCopy(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (e) {}
+      ta.remove();
+      return ok;
+    }
+    async function copyText(text, btn) {
+      let ok = false;
+      try {
+        await navigator.clipboard.writeText(text);
+        ok = true;
+      } catch (e) {
+        ok = fallbackCopy(text);
+      }
+      flash(btn, ok ? 'copied' : 'failed');
+    }
+
+    function updateStatus() {
+      const n = sessions[current].msgs.length;
+      sessInfo.textContent = 'session ' + current.slice(-5) + ' \u00b7 ' + n + ' msg' + (n === 1 ? '' : 's');
+    }
+
+    // ---------- rendering ----------
+    function renderMsg(m) {
+      const line = document.createElement('div');
+      line.className = 'line ' + m.role;
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      const ts = document.createElement('span');
+      ts.className = 'ts';
+      ts.textContent = clock(m.ts);
+      meta.appendChild(ts);
+      const who = document.createElement('span');
+      who.className = 'who';
+      who.textContent = m.role === 'user' ? 'you@bge:~$' : 'bge>';
+      meta.appendChild(who);
+      if (m.role === 'bot' && m.source) {
+        const tag = document.createElement('span');
+        tag.className = 'tag ' + String(m.source).replace(/[^a-z]/gi, '').toLowerCase();
+        tag.textContent = m.source;
+        meta.appendChild(tag);
+      }
+      const cp = document.createElement('button');
+      cp.className = 'ghost small copy';
+      cp.textContent = 'copy';
+      cp.addEventListener('click', () => copyText(m.text, cp));
+      meta.appendChild(cp);
+      line.appendChild(meta);
+
+      const body = document.createElement('div');
+      body.className = 'text';
+      body.textContent = m.text;
+      line.appendChild(body);
+
+      chat.appendChild(line);
+      chat.scrollTop = chat.scrollHeight;
+      return line;
+    }
+
+    function renderAll() {
+      chat.innerHTML = '';
+      const msgs = sessions[current].msgs;
+      if (!msgs.length) {
+        const hello = document.createElement('div');
+        hello.className = 'hello';
+        hello.textContent = '// the archive is listening. ask a question, or teach me with: teach: phrase = answer';
+        chat.appendChild(hello);
+      }
+      msgs.forEach(renderMsg);
+      updateStatus();
+    }
+
+    function addMsg(role, text, source) {
+      const s = sessions[current];
+      if (!s.msgs.length) chat.innerHTML = '';
+      const m = { role, text, source: source || null, ts: Date.now() };
+      s.msgs.push(m);
+      if (s.msgs.length > MAX_MSGS) s.msgs.shift();
+      persist();
+      renderMsg(m);
+      updateStatus();
+    }
+
+    // ---------- chat ----------
+    let recallIdx = null;
+
+    async function sendMessage() {
+      const message = input.value.trim();
+      if (!message) return;
+      addMsg('user', message);
+      input.value = '';
+      recallIdx = null;
+      sendBtn.disabled = true;
+
+      const pending = document.createElement('div');
+      pending.className = 'line bot pending';
+      pending.textContent = 'bge> thinking...';
+      chat.appendChild(pending);
+      chat.scrollTop = chat.scrollHeight;
+
+      try {
+        const res = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+        const data = await res.json();
+        pending.remove();
+        addMsg('bot', data.response || data.error || '...', data.source);
+      } catch (err) {
+        pending.remove();
+        addMsg('bot', 'Could not reach the engine.', 'error');
+      }
+      sendBtn.disabled = false;
+      input.focus();
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { sendMessage(); return; }
+      if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+        const prompts = sessions[current].msgs.filter(m => m.role === 'user').map(m => m.text);
+        if (!prompts.length) return;
+        e.preventDefault();
+        if (recallIdx === null) recallIdx = prompts.length;
+        recallIdx += (e.key === 'ArrowUp') ? -1 : 1;
+        recallIdx = Math.max(0, Math.min(prompts.length, recallIdx));
+        input.value = recallIdx === prompts.length ? '' : prompts[recallIdx];
+      }
     });
+
+    // ---------- paste ----------
+    pasteBtn.addEventListener('click', async () => {
+      try {
+        const t = await navigator.clipboard.readText();
+        if (t) { input.value += t; }
+        input.focus();
+      } catch (e) {
+        input.focus();
+        flash(pasteBtn, 'long-press box');
+      }
+    });
+
+    // ---------- toolbar ----------
+    document.getElementById('btn-new').addEventListener('click', () => {
+      startSession();
+      if (!sessions[current].msgs.length) { renderAll(); input.focus(); return; }
+      const id = newId();
+      sessions[id] = { id, started: Date.now(), msgs: [] };
+      setCurrent(id);
+      prune();
+      persist();
+      renderAll();
+      input.focus();
+    });
+
+    document.getElementById('btn-copyall').addEventListener('click', (e) => {
+      const msgs = sessions[current].msgs;
+      if (!msgs.length) { flash(e.target, 'empty'); return; }
+      const text = msgs.map(m => '[' + clock(m.ts) + '] ' + (m.role === 'user' ? 'you' : 'bge') + ': ' + m.text).join('\n');
+      copyText(text, e.target);
+    });
+
+    // ---------- history drawer ----------
+    const drawer = document.getElementById('history');
+    const list = document.getElementById('history-list');
+
+    function renderHistory() {
+      list.innerHTML = '';
+      const ids = Object.keys(sessions).sort((a, b) => sessions[b].started - sessions[a].started);
+      ids.forEach(id => {
+        const s = sessions[id];
+        const first = s.msgs.find(m => m.role === 'user');
+        const row = document.createElement('div');
+        row.className = 'hrow' + (id === current ? ' active' : '');
+
+        const info = document.createElement('div');
+        info.className = 'hinfo';
+        const title = document.createElement('div');
+        title.className = 'htitle';
+        title.textContent = first ? first.text.slice(0, 48) : '(empty session)';
+        const sub = document.createElement('div');
+        sub.className = 'hsub';
+        sub.textContent = new Date(s.started).toLocaleString() + ' \u00b7 ' + s.msgs.length + ' msgs' + (id === current ? ' \u00b7 current' : '');
+        info.appendChild(title);
+        info.appendChild(sub);
+
+        const open = document.createElement('button');
+        open.className = 'ghost small';
+        open.textContent = 'open';
+        open.addEventListener('click', () => {
+          setCurrent(id);
+          renderAll();
+          drawer.hidden = true;
+        });
+
+        const del = document.createElement('button');
+        del.className = 'ghost small danger';
+        del.textContent = 'delete';
+        del.addEventListener('click', () => {
+          delete sessions[id];
+          if (id === current) {
+            current = null;
+            startSession();
+            renderAll();
+          }
+          persist();
+          renderHistory();
+        });
+
+        row.appendChild(info);
+        row.appendChild(open);
+        row.appendChild(del);
+        list.appendChild(row);
+      });
+    }
+
+    document.getElementById('btn-history').addEventListener('click', () => {
+      drawer.hidden = !drawer.hidden;
+      if (!drawer.hidden) renderHistory();
+    });
+    document.getElementById('btn-close-history').addEventListener('click', () => { drawer.hidden = true; });
+
+    renderAll();
   </script>
 </body>
 </html>

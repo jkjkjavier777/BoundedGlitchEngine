@@ -1,0 +1,6 @@
+body { font-family: monospace; max-width: 600px; margin: 50px auto; }
+#chat { border: 1px solid #ccc; padding: 10px; height: 400px; overflow-y: auto; margin-bottom: 10px; }
+.user { color: blue; margin: 5px 0; }
+.bot { color: green; margin: 5px 0; }
+input { width: 80%; padding: 5px; }
+button { padding: 5px 10px; }

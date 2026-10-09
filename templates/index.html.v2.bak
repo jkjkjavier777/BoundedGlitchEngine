@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>BoundedGlitchEngine</title>
+  <link rel="stylesheet" href="/static/style.css?v=2">
+</head>
+<body>
+  <header>
+    <h1 class="glitch">BoundedGlitchEngine</h1>
+    <p class="tagline">Behavior before belief. Measurement before interpretation.</p>
+    <div class="zones">
+      <span class="zone green">green</span>
+      <span class="zone yellow">yellow</span>
+      <span class="zone red">red</span>
+    </div>
+  </header>
+
+  <main>
+    <div id="chat" aria-live="polite"></div>
+    <div class="inputbar">
+      <input type="text" id="prompt" placeholder="Ask, or teach: phrase = answer" autocomplete="off">
+      <button id="send">Send</button>
+    </div>
+    <p class="legend">
+      <span class="tag taught">taught</span> clean, taught answer &middot;
+      <span class="tag gpt">gpt</span> small model, may be rough
+    </p>
+
+    <details>
+      <summary>The five layers</summary>
+      <ol>
+        <li><b>Engagement</b> &mdash; start, calibrate, keep the flow</li>
+        <li><b>Retrieval</b> &mdash; smallest sufficient context</li>
+        <li><b>Reasoning</b> &mdash; five perspectives</li>
+        <li><b>Validation</b> &mdash; identity, grounding, safety</li>
+        <li><b>Synthesis</b> &mdash; connect, find patterns</li>
+      </ol>
+    </details>
+
+    <details>
+      <summary>The three zones</summary>
+      <ul>
+        <li><b class="g">Green</b> &mdash; free operation, no penalties</li>
+        <li><b class="y">Yellow</b> &mdash; caution ramps up, identity preserved</li>
+        <li><b class="r">Red</b> &mdash; hard suppression of repetition</li>
+      </ul>
+    </details>
+  </main>
+
+  <footer>Measures observable behavior only. No claims about consciousness.</footer>
+
+  <script>
+    const chat = document.getElementById('chat');
+    const input = document.getElementById('prompt');
+    const sendBtn = document.getElementById('send');
+
+    function addMessage(kind, text, source) {
+      const wrap = document.createElement('div');
+      wrap.className = 'msg ' + kind;
+      const who = document.createElement('span');
+      who.className = 'who';
+      who.textContent = kind === 'user' ? 'You' : 'Bot';
+      wrap.appendChild(who);
+      const body = document.createElement('div');
+      body.className = 'text';
+      body.textContent = text;
+      wrap.appendChild(body);
+      if (kind === 'bot' && source) {
+        const tag = document.createElement('span');
+        tag.className = 'tag ' + String(source).replace(/[^a-z]/gi, '').toLowerCase();
+        tag.textContent = source;
+        wrap.appendChild(tag);
+      }
+      chat.appendChild(wrap);
+      chat.scrollTop = chat.scrollHeight;
+      return wrap;
+    }
+
+    async function sendMessage() {
+      const message = input.value.trim();
+      if (!message) return;
+      addMessage('user', message);
+      input.value = '';
+      sendBtn.disabled = true;
+      const pending = addMessage('bot', 'thinking...');
+      pending.classList.add('pending');
+      try {
+        const res = await fetch('/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message })
+        });
+        const data = await res.json();
+        pending.remove();
+        addMessage('bot', data.response || data.error || '...', data.source);
+      } catch (err) {
+        pending.remove();
+        addMessage('bot', 'Could not reach the engine.', 'error');
+      }
+      sendBtn.disabled = false;
+      input.focus();
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') sendMessage();
+    });
+
+    addMessage('bot', 'The archive is listening. Ask a question, or teach me with: teach: phrase = answer');
+  </script>
+</body>
+</html>
